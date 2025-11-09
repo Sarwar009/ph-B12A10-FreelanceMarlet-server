@@ -21,13 +21,13 @@ async function run () {
     const jobsCollection = db.collection ('jobs');
 
 
-    app.get ('/jobs', async (req, res) => {
+    app.get ('/allJobs', async (req, res) => {
       const query = {};
       const jobs = await jobsCollection.find (query).toArray ();
       res.send (jobs);
     });
 
-    app.get('/jobs/:id', async (req, res) => {
+    app.get('/allJobs/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const job = await jobsCollection.findOne(query);
@@ -36,13 +36,13 @@ async function run () {
 
     
 
-    app.post ('/jobs', async (req, res) => {
+    app.post ('/addJobs', async (req, res) => {
       const newJob = req.body;
       const result = await jobsCollection.insertOne (newJob);
         res.send (result);
     });
 
-    app.patch ('/jobs/:id', async (req, res) => {
+    app.patch ('/updateJobs/:id', async (req, res) => {
       const id = req.params.id;
       const updatedJob = req.body;
         const query = { _id: new ObjectId(id) };
@@ -53,11 +53,25 @@ async function run () {
         res.send (result);
     });
 
-    app.delete ('/jobs/:id', async (req, res) => {
+    app.delete ('/deleteJobs/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await jobsCollection.deleteOne (query);
       res.send (result);
+    });
+
+    app.get('/myAddedJobs', async (req, res) => {
+      const email = req.query.email;
+      const query = { postedBy: email };
+      const jobs = await jobsCollection.find(query).toArray();
+      res.send(jobs);
+    });
+
+    app.get('/my-accepted-tasks', async (req, res) => {
+      const email = req.query.email;
+      const query = { acceptedBy: email };
+      const jobs = await jobsCollection.find(query).toArray();
+      res.send(jobs);
     });
 
 
