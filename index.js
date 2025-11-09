@@ -1,7 +1,79 @@
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
+const express = require ('express');
+const cors = require ('cors');
+const dotenv = require ('dotenv');
+const {MongoClient, ServerApiVersion, ObjectId} = require ('mongodb');
 
-dotenv.config();
+const port = process.env.PORT || 3000;  
 
-const app = express();
+
+dotenv.config ();
+const app = express ();
+
+app.use (cors ());
+app.use (express.json ());
+
+const client = new MongoClient (process.env.MONGO_URI);
+
+async function run () {
+  try {
+    await client.connect ();
+    const db = client.db ('freelanceDB');
+    const jobsCollection = db.collection ('jobs');
+
+
+    app.get ('/jobs', async (req, res) => {
+      const query = {};
+      const jobs = await jobsCollection.find (query).toArray ();
+      res.send (jobs);
+    });
+
+    app.get('/jobs/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const job = await jobsCollection.findOne(query);
+      res.send(job);
+    });
+
+    
+
+    app.post ('/jobs', async (req, res) => {
+      const newJob = req.body;
+      const result = await jobsCollection.insertOne (newJob);
+        res.send (result);
+    });
+
+    app.patch ('/jobs/:id', async (req, res) => {
+      const id = req.params.id;
+      const updatedJob = req.body;
+        const query = { _id: new ObjectId(id) };
+        const update = {
+          $set: updatedJob,
+        };
+        const result = await jobsCollection.updateOne (query, update);
+        res.send (result);
+    });
+
+    app.delete ('/jobs/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await jobsCollection.deleteOne (query);
+      res.send (result);
+    });
+
+
+    await client.db ('admin').command ({ping: 1});
+    console.log (
+      'Pinged your deployment. You successfully connected to MongoDB!'
+    );
+  } finally {
+  }
+}
+run ().catch (console.dir);
+
+app.get ('/', (req, res) => {
+  res.send ('Freelance Job Portal Server is running');
+});
+
+app.listen (port, () => {
+  console.log (`Freelance Job Portal Server is running on port ${port}`);
+});
