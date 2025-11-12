@@ -42,9 +42,38 @@ async function run () {
         res.send (result);
     });
 
+//     app.patch('/updateJobs/:id', async (req, res) => {
+//   const id = req.params.id;
+
+//   if (!ObjectId.isValid(id)) {
+//     return res.status(400).json({ error: "Invalid job ID" });
+//   }
+
+//   const updatedJob = { ...req.body };
+//   delete updatedJob._id; // <-- REMOVE _id to prevent MongoDB error
+
+//   try {
+//     const query = { _id: new ObjectId(id) };
+//     const update = { $set: updatedJob };
+//     const result = await jobsCollection.updateOne(query, update);
+
+//     if (result.modifiedCount === 0) {
+//       return res.status(404).json({ error: "Job not found or no changes made" });
+//     }
+
+//     res.json({ success: true, result });
+//   } catch (err) {
+//     console.error("Update error:", err);
+//     res.status(500).json({ error: "Internal Server Error" });
+//   }
+// });
+
+
     app.patch ('/updateJobs/:id', async (req, res) => {
       const id = req.params.id;
       const updatedJob = req.body;
+      
+          delete updatedJob._id;
         const query = { _id: new ObjectId(id) };
         const update = {
           $set: updatedJob,
