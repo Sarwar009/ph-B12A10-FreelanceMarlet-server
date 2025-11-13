@@ -1,7 +1,7 @@
 const express = require ('express');
 const cors = require ('cors');
 const dotenv = require ('dotenv');
-const {MongoClient, ServerApiVersion, ObjectId} = require ('mongodb');
+const {MongoClient, ObjectId} = require ('mongodb');
 
 const port = process.env.PORT || 3000;
 
@@ -38,7 +38,7 @@ async function run () {
       res.send (result);
     });
 
-    app.patch ('/updateJobs/:id', async (req, res) => {
+    app.patch ('/updateJob/:id', async (req, res) => {
       const id = req.params.id;
       const updatedJob = req.body;
 
@@ -51,7 +51,7 @@ async function run () {
       res.send (result);
     });
 
-    app.delete ('/deleteJobs/:id', async (req, res) => {
+    app.delete ('/deleteJob/:id', async (req, res) => {
       const id = req.params.id;
       const query = {_id: new ObjectId (id)};
       const result = await jobsCollection.deleteOne (query);
@@ -72,7 +72,7 @@ async function run () {
       res.send (jobs);
     });
 
-    app.patch ('/acceptJob/:id', async (req, res) => {
+    app.patch ('/my-accepted-tasks/:id', async (req, res) => {
       const {id} = req.params;
       const {acceptedBy} = req.body;
       const result = await jobsCollection.updateOne (
