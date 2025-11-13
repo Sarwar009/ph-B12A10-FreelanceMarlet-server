@@ -15,7 +15,7 @@ const client = new MongoClient (process.env.MONGO_URI);
 
 async function run () {
   try {
-    await client.connect ();
+    // await client.connect ();
     const db = client.db ('freelanceDB');
     const jobsCollection = db.collection ('jobs');
 
@@ -89,7 +89,7 @@ async function run () {
       res.send (jobs);
     });
 
-    await client.db ('admin').command ({ping: 1});
+    // await client.db ('admin').command ({ping: 1});
     console.log (
       'Pinged your deployment. You successfully connected to MongoDB!'
     );
@@ -102,6 +102,9 @@ app.get ('/', (req, res) => {
   res.send ('Freelance Job Portal Server is running');
 });
 
-app.listen (port, () => {
-  console.log (`Freelance Job Portal Server is running on port ${port}`);
-});
+module.exports = app;
+
+
+// app.listen (port, () => {
+//   console.log (`Freelance Job Portal Server is running on port ${port}`);
+// });
