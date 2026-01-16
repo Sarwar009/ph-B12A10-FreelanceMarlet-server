@@ -30,3 +30,4 @@ coverage/
 .vercel
 
 freelancemarketplace-firebase-admin-key.json
+.env*.local

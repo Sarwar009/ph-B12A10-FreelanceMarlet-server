@@ -3,16 +3,27 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const { MongoClient, ObjectId } = require("mongodb");
 const admin = require("firebase-admin");
-const serviceAccount = require("./freelancemarketplace-firebase-admin-key.json");
 
 dotenv.config();
+
+
+const serviceAccount = JSON.parse(
+  process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+);
+
+serviceAccount.private_key =
+  serviceAccount.private_key.replace(/\\n/g, '\n');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
+
 const app = express();
+// cors 
 app.use(cors());
+
+
 app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
@@ -39,27 +50,31 @@ const client = new MongoClient(uri);
 let usersCollection;
 let jobsCollection;
 
-async function run() {
-  await client.connect();
-  const db = client.db("freelance_market");
-  usersCollection = db.collection("users");
-  jobsCollection = db.collection("jobs");
-
-  // Ensure text index for search (idempotent)
-  await jobsCollection.createIndex(
-    { title: "text", shortDescription: "text", description: "text" },
-    { name: "jobs_text_index", default_language: "english" }
-  );
-
-  // Helper: check admin role
-  async function isAdmin(email) {
-    if (!email) return false;
-    const user = await usersCollection.findOne({ email: email.toLowerCase() });
-    return !!(user && user.role === "admin");
+async function connectDB() {
+  try {
+    await client.connect();
+    const db = client.db("freelance_market");
+    usersCollection = db.collection("users");
+    jobsCollection = db.collection("jobs");
+  } catch (err) {
+    console.error("DB Connection Error:", err);
   }
+}
 
-  // Public: list jobs with search, filters and pagination
-  app.get("/allJobs", async (req, res) => {
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
+
+// Helper: check admin role
+async function isAdmin(email) {
+  if (!email) return false;
+  const user = await usersCollection.findOne({ email: email.toLowerCase() });
+  return !!(user && user.role === "admin");
+}
+
+// Public: list jobs with search, filters and pagination
+app.get("/allJobs", async (req, res) => {
     try {
       const { q, category, status, page = 1, pageSize = 20, sort = "newest" } = req.query;
       const query = {};
@@ -113,7 +128,8 @@ app.post("/allJobs", async (req, res) => {
       locationType: payload.locationType || "",
       postedDate: payload.postedDate || new Date().toISOString().split("T")[0],
       salaryRange: payload.salaryRange || "",
-      acceptedBy: null, // initially null
+      acceptedBy: null, 
+      // createdAt: new Date(),
     };
 
     const r = await jobsCollection.insertOne(newJob);
@@ -307,8 +323,14 @@ app.post("/allJobs", async (req, res) => {
     try {
       const totalUsers = await usersCollection.countDocuments();
       const totalJobs = await jobsCollection.countDocuments();
-      const activeJobs = await jobsCollection.countDocuments({ status: "active" });
-      const recentJobs = await jobsCollection.countDocuments({ createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } });
+      const activeJobs = await jobsCollection.countDocuments({ status: "active"});
+      const recentJobs = await jobsCollection.countDocuments({
+  createdAt: {
+    $exists: true,
+    $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+  },
+});
+
       res.send({ totalUsers, totalJobs, activeJobs, recentJobs });
     } catch (err) {
       console.error("GET /dashboard/overview error:", err);
@@ -343,6 +365,10 @@ app.post("/allJobs", async (req, res) => {
     }
   });
 
+  
+
+
+
   app.get("/dashboard/recent", verifyFBToken, async (req, res) => {
     try {
       const recentJobs = await jobsCollection.find().sort({ createdAt: -1 }).limit(10).toArray();
@@ -354,17 +380,14 @@ app.post("/allJobs", async (req, res) => {
     }
   });
 
-  console.log("Server routes are initialized");
-}
-
-run().catch((err) => {
-  console.error("Server init error:", err);
-});
-
 app.get("/", (req, res) => {
   res.send({ message: "Freelance Market API running" });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+  });
+}
+
+module.exports = app;
